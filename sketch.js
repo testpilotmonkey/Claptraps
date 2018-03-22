@@ -66,17 +66,17 @@ function preload() {
 
   loadGameSprites()
 
-  daveSprites = [loadImage("Images/dave2.png"),
-                loadImage("Images/dave_run1.png"),
-                loadImage("Images/dave_run2.png"),
-                loadImage("Images/dave_run3.png"),
-                loadImage("Images/dave_run4.png"),
-                loadImage("Images/dave_run5.png"),
-                loadImage("Images/dave_run6.png"),
-                loadImage("Images/dave_run_v1.png"),
-                loadImage("Images/dave_run_v2.png"),
-                loadImage("Images/dave_run_v3.png"),
-                loadImage("Images/dave_run_v4.png")]
+  daveSprites = [loadImage("images/dave2.png"),
+                loadImage("images/dave_run1.png"),
+                loadImage("images/dave_run2.png"),
+                loadImage("images/dave_run3.png"),
+                loadImage("images/dave_run4.png"),
+                loadImage("images/dave_run5.png"),
+                loadImage("images/dave_run6.png"),
+                loadImage("images/dave_run_v1.png"),
+                loadImage("images/dave_run_v2.png"),
+                loadImage("images/dave_run_v3.png"),
+                loadImage("images/dave_run_v4.png")]
 
   // [key] makes it so you can call the object with a variable for the key
   daveAnim = {[NORTH]: [9,10,9,10],
