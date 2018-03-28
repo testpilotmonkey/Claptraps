@@ -330,6 +330,13 @@ class Transporter extends Thing {
       playerMoveDir = null
       playerMoveCount = 0
 
+      transportX = hitX - mapOffsetX
+      transportY = hitY - mapOffsetY
+
+      resetScreen()
+      gameOption = 'transporting'
+
+
     } else{
       // creates a new item at the transport location, not a copy of the same item
       createItem(tempTarget[0], tempTarget[1], mapgrid[hitX][hitY].item, true)
@@ -371,7 +378,8 @@ class CalmFrog extends Thing {
     if(hitby.name == 'player'){
       createItem(hitX, hitY, 0, false)
       gameScore++
-      console.log(gameScore)
+      //console.log(gameScore)
+
     }
   }
 
@@ -411,7 +419,10 @@ class StartledFrog extends Thing {
     if(hitby.name == 'player'){
       createItem(hitX, hitY, 0, false)
       gameScore++
-      console.log(gameScore)
+      //console.log(gameScore)
+
+      // gameOption = 4
+      // gameMessage = 'Test'
     }
   }
 
@@ -495,7 +506,7 @@ class Chopper extends Thing {
   }
 
   action(){
-    if(gameScore >= 5){
+    if(gameScore >= minScore){
       mapgrid[i][j].solid = false
     }
   }
@@ -735,8 +746,10 @@ class TurretN extends Thing {
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(NORTH, i, j).properties.name)){
       createItem(i, j - 1, 22, true)
-      look(NORTH, i, j).forward = NORTH
-      look(NORTH, i, j).backward = SOUTH
+      mapgrid[i][j - 1].forward = NORTH
+      mapgrid[i][j - 1].backward = SOUTH
+      // look(NORTH, i, j).forward = NORTH
+      // look(NORTH, i, j).backward = SOUTH
     }
   }
 
@@ -758,8 +771,10 @@ action(){
   if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
   .includes(look(EAST, i, j).properties.name)){
     createItem(i + 1, j, 22, true)
-    look(EAST, i, j).forward = EAST
-    look(EAST, i, j).backward = WEST
+    mapgrid[i + 1][j].forward = EAST
+    mapgrid[i + 1][j].backward = WEST
+    // look(EAST, i, j).forward = EAST
+    // look(EAST, i, j).backward = WEST
   }
 }
 
@@ -781,8 +796,10 @@ class TurretS extends Thing {
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(SOUTH, i, j).properties.name)){
       createItem(i, j + 1, 22, true)
-      look(SOUTH, i, j).forward = SOUTH
-      look(SOUTH, i, j).backward = NORTH
+      mapgrid[i][j + 1].forward = SOUTH
+      mapgrid[i][j + 1].backward = NORTH
+      // look(SOUTH, i, j).forward = SOUTH
+      // look(SOUTH, i, j).backward = NORTH
     }
   }
 
@@ -804,8 +821,10 @@ class TurretW extends Thing {
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(WEST, i, j).properties.name)){
       createItem(i - 1, j, 22, true)
-      look(WEST, i, j).forward = WEST
-      look(WEST, i, j).backward = EAST
+      mapgrid[i - 1][j].forward = WEST
+      mapgrid[i - 1][j].backward = EAST
+      // look(WEST, i, j).forward = WEST
+      // look(WEST, i, j).backward = EAST
     }
   }
 
@@ -820,6 +839,7 @@ class Laser extends Thing {
     this.animation = null
     //this.collect = false
     this.squash = true
+    this.state = {startleFrog: false, newLaser: true}
   }
 
   hit(hitX, hitY, hitby){
@@ -835,18 +855,11 @@ class Laser extends Thing {
     let back = mapgrid[i][j].backward
     let backItem = look(back, i, j)
 
-    if (['laser', 'turretn', 'turrets', 'turrete', 'turretw'].includes(backItem.properties.name)
-       && backItem.forward == direction){
-      if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
-      .includes(look(direction, i, j).properties.name)){
-
-        createItem(i + direction[0], j + direction[1], 22, true)
-        //debugger
-        look(direction, i, j).forward = direction
-        look(direction, i, j).backward = back
+// This code makes sure lasers pointing south and east don't go to the end of the screen all at once
+    if(mapgrid[i][j].state.newLaser){
+      if(mapgrid[i][j].forward == NORTH || mapgrid[i][j].forward == WEST){
+        mapgrid[i][j].state.newLaser = false
       }
-    } else {
-      createItem(i, j, 0, true)
     }
 
     if(mapgrid[i][j].item > 0){
@@ -856,6 +869,29 @@ class Laser extends Thing {
         mapgrid[i][j].sprite = 36
       }
     }
+
+    if(!mapgrid[i][j].state.newLaser){
+      if (['laser', 'turretn', 'turrets', 'turrete', 'turretw'].includes(backItem.properties.name)
+         && backItem.forward == direction){
+        if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
+        .includes(look(direction, i, j).properties.name)){
+
+          createItem(i + direction[0], j + direction[1], 22, true)
+          //debugger
+          mapgrid[i + direction[0]][j + direction[1]].forward = direction
+          mapgrid[i + direction[0]][j + direction[1]].backward = back
+          mapgrid[i + direction[0]][j + direction[1]].sprite = mapgrid[i][j].sprite
+          // look(direction, i, j).forward = direction
+          // look(direction, i, j).backward = back
+        }
+      } else {
+        createItem(i, j, 0, true)
+      }
+    } else {
+      mapgrid[i][j].state.newLaser = false
+    }
+
+
 
   }
 

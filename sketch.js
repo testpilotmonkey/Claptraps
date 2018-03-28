@@ -1,9 +1,9 @@
 
-let gameOption = 1
+let gameOption = 'setup'
 
 let levelMap = []
 let mapgrid = []
-let i, j
+let i, j // I know, these REALLY shouldn't be globals
 
 
 let playerProperties = {properties: {name: 'player',
@@ -36,7 +36,14 @@ let temp = null
 let daveSprites
 let gamesprites
 let targetSprite
-let daveAnim
+
+// A note on JavaScript, if I need it later:
+// [key] makes it so you can call the object with a variable for the key
+let daveAnim = {[NORTH]: [9,10,9,10],
+                [SOUTH]: [7,8,7,8],
+                [EAST]: [1,2,3,2],
+                [WEST]: [4,5,6,5]}
+
 let daveAnimCount = 0
 let daveFrame = 0
 let daveWait = 10
@@ -47,12 +54,14 @@ let escapePressed = false
 let shiftPressed = false
 let controlPressed = false
 let backPressed = false
-//let enterPressed = false
+let enterPressed = false
 let mPressed = false
 let upPressed = false
 let downPressed = false
 let leftPressed = false
 let rightPressed = false
+//let nPressed = false
+let keysPressed = {}
 
 let selectTarget = false
 let savedX = null, savedY = null
@@ -60,10 +69,33 @@ let hitItem = null
 
 let gameMessage = 'whoops!'
 let resetLevel = false
+let minScore = 5
+
+let LEVELWIDTH = 16
+let LEVELHEIGHT = 12
+let tempWidth = 16
+let tempHeight = 12
+let tempScore = 5
+
+let mapOffsetX = 0
+let mapOffsetY = 0
+let scrollX = false
+let scrollY = false
+let editMapOffsetX = 0
+let editMapOffsetY = 0
+
+let transportCounter = 0
+let transportX = 0
+let transportY = 0
+
+let levelList = {}
+let levelNumber = 0
+let endSelect = true
 
 function preload() {
   //daveImg = loadImage('images/dave2.png')
 
+  // Game sprites are loaded in items.js
   loadGameSprites()
 
   daveSprites = [loadImage("images/dave2.png"),
@@ -78,17 +110,10 @@ function preload() {
                 loadImage("images/dave_run_v3.png"),
                 loadImage("images/dave_run_v4.png")]
 
-  // [key] makes it so you can call the object with a variable for the key
-  daveAnim = {[NORTH]: [9,10,9,10],
-              [SOUTH]: [7,8,7,8],
-              [EAST]: [1,2,3,2],
-              [WEST]: [4,5,6,5]}
-
   targetSprite = loadImage('images/target.png')
 
-  levelMap = loadJSON('level.json')
-
-  //console.log(levelMap)
+  // Levels are loaded in levellist.js
+  loadLevels()
 }
 
 function setup() {
@@ -96,8 +121,6 @@ function setup() {
   background(0)
   noStroke()
   frameRate(30)
-
-
 }
 
 function resetFlags(rx, ry){
@@ -118,6 +141,8 @@ function resetFlags(rx, ry){
   mapgrid[rx][ry].left = mapgrid[rx][ry].properties.left
   mapgrid[rx][ry].cloned = false
   mapgrid[rx][ry].state = Object.assign({}, mapgrid[rx][ry].properties.state)
+  mapgrid[rx][ry].x = rx
+  mapgrid[rx][ry].y = ry
   if (mapgrid[rx][ry].item == 0){
     mapgrid[rx][ry].empty = true
   } else {
@@ -125,10 +150,36 @@ function resetFlags(rx, ry){
   }
 }
 
+function resetScreen(){
+  mapOffsetX = playerX - 8
+  if (mapOffsetX < 0){
+    mapOffsetX = 0
+  } else if (mapOffsetX > LEVELWIDTH - 16){
+    mapOffsetX = LEVELWIDTH - 16
+  }
+
+  mapOffsetY = playerY - 6
+  if (mapOffsetY < 0){
+    mapOffsetY = 0
+  } else if (mapOffsetY > LEVELHEIGHT - 12){
+    mapOffsetY = LEVELHEIGHT - 12
+  }
+
+
+}
+
 function setupGame(){
+  //console.log('level: ' + levelNumber)
+  levelMap = levelList[levelNumber]
+
   playerStartX = levelMap.playerX
   playerStartY = levelMap.playerY
-  console.log(playerStartX, playerStartY)
+  LEVELHEIGHT = levelMap.levelHeight
+  LEVELWIDTH = levelMap.levelWidth
+  minScore = levelMap.minScore
+  tempScore = minScore
+
+  //console.log(playerStartX, playerStartY)
   playerX = playerStartX
   playerY = playerStartY
   playerMoveDir = null
@@ -139,10 +190,12 @@ function setupGame(){
   contents = null
   temp = null
 
+  resetScreen()
+
   //Create mapgrid from levelMap
-  for(i=0; i<16; i++){
+  for(i=0; i<LEVELWIDTH; i++){
     mapgrid[i] = []
-    for(j=0; j<12; j++){
+    for(j=0; j<LEVELHEIGHT; j++){
       mapgrid[i][j] = new Object()
       // shallow copy the object, so mapgrid is not just a reference to levelMap
       mapgrid[i][j] = Object.assign({}, levelMap[i][j])
@@ -152,38 +205,63 @@ function setupGame(){
   }
 }
 
+// Screen is drawn at the end of every 'draw' function, so we have to make sure the draw function
+// completes any time we want to show the screen. All functions we want to draw to the screen are
+// called below in the draw function, and selected by 'gameOption'.
 function draw() {
-  if (gameOption == 0){ // Editor
+
+  ////////////////////////////
+  // Editor related functions
+  ////////////////////////////
+
+  if (gameOption == 'editor'){ // Editor
     //titleScreen()
     editor()
     mPressed = false // Placed here so mouse button isn't permanently pressed
     if (escapePressed == true){
-       gameOption = 1
+       gameOption = 'setup'
        escapePressed = false
-    }
-    if (backPressed){
-       saveJSON(levelMap, 'level.json')
-       console.log('Saving!')
-       backPressed = false
+       levelList[levelNumber] = levelMap
+       // editMapOffsetX = 0
+       // editMapOffsetY = 0
     }
   }
 
-  if (gameOption == 1){ // Game set up
+  if (gameOption == 'newmap'){ // Create a new map
+    createNewMap()
+  }
+
+  if (gameOption == 'minscore'){
+    setMinScore()
+  }
+
+
+  //////////////////////////
+  // Game related functions
+  //////////////////////////
+
+  if (gameOption == 'setup'){ // Game set up
     setupGame()
-    gameOption = 2
+    gameOption = 'game'
   }
 
-  if (gameOption == 2){ // Play the game
+  if (gameOption == 'game'){ // Play the game
     playGame()
     spacePressed = false // Placed here so action button isn't permanently pressed
     mPressed = false
+    keysPressed['N'] = false
     if (escapePressed == true) {
-      gameOption = 0
+      gameOption = 'editor'
+      playerLives = 3
       escapePressed = false
+    }
+    if (enterPressed == true){
+      gameOption = 'status'
+      enterPressed = false
     }
   }
 
-  if (gameOption == 3){ // Wait for keypress, used for message boxes
+  if (gameOption == 'restart'){ // Wait for keypress, used for level end and kill player
     fill(0)
     rectMode(CENTER)
     rect(320, 240, 300, 100)
@@ -191,13 +269,59 @@ function draw() {
     fill(255)
     textAlign(CENTER)
     text(gameMessage, 320, 240)
+
+    escapePressed = false
+    enterPressed = false
     if(spacePressed){
       if(resetLevel){
-        gameOption = 1
+        gameOption = 'setup'
         resetLevel = false
       } else {
-        gameOption = 2
+        gameOption = 'game'
       }
+      spacePressed = false
+    }
+  }
+
+  if (gameOption == 'status'){ // Status screen
+    fill(0)
+    rectMode(CENTER)
+    rect(320, 240, 300, 160)
+    textSize(32)
+    fill(255)
+    textAlign(CENTER)
+
+    text('Lives: ' + playerLives, 320, 200)
+    text('Score: ' + gameScore, 320, 240)
+    text('Minimum Score: ' + minScore, 320, 280)
+
+    spacePressed = false
+    escapePressed = false
+
+    if(enterPressed){
+      gameOption = 'game'
+      enterPressed = false
+    }
+  }
+
+  if (gameOption == 'transporting'){
+    rectMode(CENTER)
+    fill(0, 255, 0, 10)
+    rect(320, 240, 640, 480)
+    fill(17 * transportCounter, 0, 255, 50)
+    //console.log(transportX, transportY)
+    rect(40 * transportX + 20, 40 * transportY + 20, 90 * transportCounter, 90 * transportCounter)
+    textSize(32)
+    fill(0)
+    textAlign(CENTER)
+    //text('Transporting!', 320, 240)
+    transportCounter++
+    if (transportCounter > 15){
+      gameOption = 'game'
+      transportCounter = 0
+      spacePressed = false
+      enterPressed = false
+      escapePressed = false
     }
   }
 
@@ -223,8 +347,11 @@ function playGame(){
   }
 
   // Scan grid for things to do
-  for(i=0; i<16; i++){
-    for(j=0; j<12; j++){
+  for(i=0; i<LEVELWIDTH; i++){
+    for(j=0; j<LEVELHEIGHT; j++){
+
+      // Uncomment to check that x and y variables are being assigned correctly
+      // if (!(mapgrid[i][j].x == i &&  mapgrid[i][j].y == j)) console.log('uh oh')
 
       // Activate item actions!
       //if(mapgrid[i][j].beingMovedInto == null){
@@ -257,35 +384,80 @@ function playGame(){
 
     }
   }
-  for(i=0; i<16; i++){
-    for(j=0; j<12; j++){
+  for(i=0; i<LEVELWIDTH; i++){
+    for(j=0; j<LEVELHEIGHT; j++){
       if (mapgrid[i][j].moveDir != null){
         moveItems()
       }
     }
   }
 
-  if(gameOption != 2) return // Don't draw if player killed, etc
+  if(gameOption != 'game') return // Don't draw if player killed, etc
 
   //Draw objects on screen
 
   background(150, 150, 255)
 
-  for(i=0; i<16; i++){
-    for(j=0; j<12; j++){
-      if (mapgrid[i][j].sprite != 0){
-        //image(gameSprites[getProperty(mapgrid[i][j].item, 'sprite')], i*40, j*40)
-        //console.log(mapgrid[i][j])
-        let offsetX = 0, offsetY = 0
-        if (mapgrid[i][j].moveDir != null){
-          offsetX = mapgrid[i][j].moveDir[0] * mapgrid[i][j].moveCounter * 10
-          offsetY = mapgrid[i][j].moveDir[1] * mapgrid[i][j].moveCounter * 10
-        }
-        image(gameSprites[mapgrid[i][j].sprite], i*40 + offsetX, j*40 + offsetY)  // use for animation, broken atm
-      }
+  if (playerMoveDir != null){
+    playerMoving = playerMoveDir
+  }
+
+  // Calculate offset due to player position
+  scrollX = false
+  if (playerMoving == EAST){
+    if(playerX - mapOffsetX > 10){
+      mapOffsetX = playerX - 10
+    }
+    if (mapOffsetX < 0) mapOffsetX = 0
+    if (mapOffsetX > LEVELWIDTH - 16) mapOffsetX = LEVELWIDTH - 16
+
+    if (playerX - mapOffsetX > 9 && LEVELWIDTH - playerX > 6){
+     scrollX = true
     }
   }
 
+  if (playerMoving == WEST){
+    if(playerX - mapOffsetX < 5){
+      mapOffsetX = playerX - 5
+    }
+    if (mapOffsetX < 0) mapOffsetX = 0
+    if (mapOffsetX > LEVELWIDTH - 16) mapOffsetX = LEVELWIDTH - 16
+
+    if (playerX - mapOffsetX < 6 && playerX > 5){
+      scrollX = true
+    }
+  }
+
+
+
+  scrollY = false
+  if (playerMoving == SOUTH){
+    if(playerY - mapOffsetY > 6){
+      mapOffsetY = playerY - 6
+    }
+    if (mapOffsetY < 0) mapOffsetY = 0
+    if (mapOffsetY > LEVELHEIGHT - 12) mapOffsetY = LEVELHEIGHT - 12
+
+    if (playerY - mapOffsetY > 5 && LEVELHEIGHT - playerY > 6){
+     scrollY = true
+    }
+  }
+
+  if (playerMoving == NORTH){
+    if(playerY - mapOffsetY < 5){
+      mapOffsetY = playerY - 5
+    }
+    if (mapOffsetY < 0) mapOffsetY = 0
+    if (mapOffsetY > LEVELHEIGHT - 12) mapOffsetY = LEVELHEIGHT - 12
+
+    if (playerY - mapOffsetY < 6 && playerY > 5){
+      scrollY = true
+    }
+  }
+
+
+
+  // Set movement offset of player
   let xOffset = 0, yOffset = 0
 
   if (playerMoveDir != null){
@@ -293,13 +465,35 @@ function playGame(){
     yOffset = playerMoveDir[1] * playerMoveCount * 10
   }
 
+  // Draw map grid
+  for(i = -2; i < 18; i++){    // Range is 2 tiles outside the window both ways so that tiles don't
+    for(j = -2; j < 14; j++){  // pop in and objects moving into tiles on the border don't pop in either
+      let offi = i + mapOffsetX
+      let offj = j + mapOffsetY
+        if (offi > -1 && offi < LEVELWIDTH && offj > -1 && offj < LEVELHEIGHT){
+        if (mapgrid[offi][offj].sprite != 0){
+          //image(gameSprites[getProperty(mapgrid[i][j].item, 'sprite')], i*40, j*40)
+          //console.log(mapgrid[i][j])
+          let itemOffsetX = 0, itemOffsetY = 0
+          if (mapgrid[offi][offj].moveDir != null){
+            itemOffsetX = mapgrid[offi][offj].moveDir[0] * mapgrid[offi][offj].moveCounter * 10
+            itemOffsetY = mapgrid[offi][offj].moveDir[1] * mapgrid[offi][offj].moveCounter * 10
+          }
+          if (scrollX){
+            itemOffsetX -= xOffset
+          }
+          if (scrollY){
+            itemOffsetY -= yOffset
+          }
+          image(gameSprites[mapgrid[offi][offj].sprite], i*40 + itemOffsetX, j*40 + itemOffsetY)  // use for animation, broken atm
+        }
+      }
+    }
+  }
+
+
   // Animate player
 
-
-  if (playerMoveDir != null){
-    playerMoving = playerMoveDir
-  }
-  //console.log(playerMoving)
 
   if (playerMoving != null){
     daveAnimCount ++
@@ -328,8 +522,19 @@ function playGame(){
     //console.log('here')
   }
 
+  if(scrollX) xOffset = 0
+  if(scrollY) yOffset = 0
+  image(daveSprites[animFrame], (playerX - mapOffsetX)*40 + xOffset, (playerY - mapOffsetY)*40 + yOffset)
 
-  image(daveSprites[animFrame], playerX*40 + xOffset, playerY*40 + yOffset)
+  if(gameScore >= minScore){
+    fill(0, 0, 0, 50)
+    rectMode(CENTER)
+    rect(320, 460, 300, 100)
+    textSize(32)
+    fill(255)
+    textAlign(CENTER)
+    text("Minimum Score Hit!", 320, 460)
+  }
 
   //console.log(frameRate())
 }
@@ -424,9 +629,13 @@ function getKeyPress() {
 }
 
 function keyPressed(){
+  //console.log(key)
   if (key == ' '){
     spacePressed = true
   }
+  // if (key == 'N'){
+  //   nPressed = true
+  // }
   if (keyCode == SHIFT){
     shiftPressed = true
   }
@@ -442,12 +651,15 @@ function keyPressed(){
   if (keyCode == BACKSPACE){
     backPressed = true
   }
+  keysPressed[key] = true
+  //console.log(keysPressed)
 }
 
 function mousePressed(){
   mPressed = true
 }
 
+// Look returns a copy of the tile, so you can see it but not change it
 function look(direction, inputX, inputY){
   let tempX = inputX + direction[0], tempY = inputY + direction[1]
   //console.log(tempX, tempY)
@@ -460,9 +672,10 @@ function look(direction, inputX, inputY){
     }
   }
 
-  if (tempX > -1 && tempX < 16 && tempY > -1 && tempY < 12){
+  if (tempX > -1 && tempX < LEVELWIDTH && tempY > -1 && tempY < LEVELHEIGHT){
 
-    let tempReturn = mapgrid[tempX][tempY]
+    let tempReturn = Object.assign({}, mapgrid[tempX][tempY])
+    //let tempReturn = mapgrid[tempX][tempY]
 
     if(playerInDirection) {
       //return playerProperties
@@ -478,7 +691,7 @@ function look(direction, inputX, inputY){
     //   return true
     // }
   } else {
-    let tempReturn = itemProperties[1]
+    let tempReturn = Object.assign({}, itemProperties[1])
     tempReturn.properties = itemProperties[1]
     tempReturn.item = 1
     tempReturn.squash = false
@@ -486,6 +699,7 @@ function look(direction, inputX, inputY){
   }
 }
 
+// getProperty is probably not needed since I've added .properties to mapgrid tiles
 function getProperty (item, property){
   if (item.properties.name != 'player'){
     //console.log(item)
@@ -518,26 +732,37 @@ function killPlayer(){
   playerMoveDir = null
   playerLives--
 
-  if (playerLives < 0){
+  resetScreen()
+
+  if (playerLives < 1){
     //gameOption = 1
     setMessage('Poor Dave!')
+    gameOption = 'restart'
     resetLevel = true
     playerLives = 3
   } else {
     setMessage('Watch out Dave!')
+    gameOption = 'restart'
     console.log('Lives: ' + playerLives)
   }
 }
 
 function levelFinished(){
   setMessage('Level Finished!')
+  gameOption = 'restart'
   resetLevel = true
+  editMapOffsetX = 0
+  editMapOffsetY = 0
+  levelNumber++
+  if (levelNumber > levelList.length - 1){
+    levelNumber = 0
+  }
 }
 
 function setMessage(message){
   console.log(message)
   gameMessage = message
-  gameOption = 3
+
 }
 
 function move(direction, mx, my){
@@ -648,8 +873,8 @@ function moveItems(){
 
 function changeItem(a,b){
 
-  for(let ii=0; ii<16; ii++){
-    for(let jj=0; jj<12; jj++){
+  for(let ii=0; ii<LEVELWIDTH; ii++){
+    for(let jj=0; jj<LEVELHEIGHT; jj++){
       if(mapgrid[ii][jj].item == a) {
         createItem(ii, jj, b, true)
         //console.log("changed!")
@@ -664,18 +889,24 @@ function createItem(cX, cY, cItem, triggerHit){
   hitItem.state = Object.assign({}, mapgrid[cX][cY].state)
 
   // if object this is being created on is moving, remove clone
-  // TODO: if not clone, make sure flags are set correctly?
+
 
   let direction = mapgrid[cX][cY].moveDir
   if(direction!= null && mapgrid[cX + direction[0]][cY + direction[1]].cloned){
     //mapgrid[cX][cY].moveDir = null
     createItem(cX + direction[0], cY + direction[1], 0, false)
+  } else if (direction != null){
+    // if not clone, make sure flags are set correctly
+    //console.log('we may have a problem here', cX + direction[0], cY + direction[1])
+    mapgrid[cX + direction[0]][cY + direction[1]].beingMovedInto = null
+    mapgrid[cX + direction[0]][cY + direction[1]].squash = mapgrid[cX + direction[0]][cY + direction[1]].properties.squash
   }
 
-  // bmi = mapgrid[cX][cY].beingMovedInto
+  // let bmi = mapgrid[cX][cY].beingMovedInto
   // if(bmi != null){
   //   //mapgrid[cX][cY].beingMovedInto = null
-  //   console.log(mapgrid[cX + bmi[0]][cY + bmi[1]].properties.name)
+  //   //console.log(mapgrid[cX + bmi[0]][cY + bmi[1]].properties.name)
+  //   console.log(mapgrid[cX][cY].properties.name)
   //   //createItem(cX + bmi[0], cY + bmi[1], 0, false)
   //   // mapgrid[cX + bmi[0]][cY + bmi[1]].item = 0
   //   // resetFlags(cX + bmi[0],cY + bmi[1])
