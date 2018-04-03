@@ -65,13 +65,14 @@ function editor(){
     controlPressed = false
   }
 
-  if (backPressed){
+  // Save map
+  if (keysPressed['='] == true){
     levelMap.levelHeight = LEVELHEIGHT
     levelMap.levelWidth = LEVELWIDTH
     levelMap.minScore = minScore
     saveJSON(levelMap, 'level.json')
     console.log('Saving!')
-    backPressed = false
+    keysPressed['='] = false
   }
 
   if (keysPressed['N'] == true){

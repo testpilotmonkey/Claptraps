@@ -823,6 +823,7 @@ class TurretW extends Thing {
       createItem(i - 1, j, 22, true)
       mapgrid[i - 1][j].forward = WEST
       mapgrid[i - 1][j].backward = EAST
+      mapgrid[i - 1][j].sprite = 37  // if this is not here the wrong sprite appears on the first laser
       // look(WEST, i, j).forward = WEST
       // look(WEST, i, j).backward = EAST
     }
@@ -862,13 +863,13 @@ class Laser extends Thing {
       }
     }
 
-    if(mapgrid[i][j].item > 0){
-      if(direction == WEST || direction == EAST){
-        mapgrid[i][j].sprite = 37
-      } else {
-        mapgrid[i][j].sprite = 36
-      }
+    //if(mapgrid[i][j].item > 0){
+    if(direction == WEST || direction == EAST){
+      mapgrid[i][j].sprite = 37
+    } else {
+      mapgrid[i][j].sprite = 36
     }
+    //}
 
     if(!mapgrid[i][j].state.newLaser){
       if (['laser', 'turretn', 'turrets', 'turrete', 'turretw'].includes(backItem.properties.name)
