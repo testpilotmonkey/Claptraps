@@ -118,8 +118,8 @@ function editor(){
   }
 
   // Show map
-  for(i=0; i<16; i++){
-    for(j=0; j<12; j++){
+  for(let i=0; i<16; i++){
+    for(let j=0; j<12; j++){
       if (levelMap[i + editMapOffsetX][j + editMapOffsetY].item != 0){
         //console.log(getProperty(levelMap[i][j].item, 'sprite'))
         image(gameSprites[getPropertyEdit(levelMap[i + editMapOffsetX][j + editMapOffsetY].item, 'sprite')], i*40, j*40)
@@ -239,6 +239,10 @@ function createNewMap (){
 
     editMapOffsetX = 0
     editMapOffsetY = 0
+
+    minScore = 10
+    tempScore = minScore
+    levelMap.minScore = minScore
 
     gameOption = 'editor'
     enterPressed = false

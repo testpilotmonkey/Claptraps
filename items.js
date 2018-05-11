@@ -33,7 +33,7 @@ class Thing {
     return
   }
 
-  action(){
+  action(i, j){
     return
   }
 
@@ -88,7 +88,7 @@ class Smiley extends Thing {
     this.triggerButton = true
   }
 
-  action(){
+  action(i, j){
 
     if(mapgrid[i][j].moveDir != null || mapgrid[i][j].moved != null){
       mapgrid[i][j].state.startleFrog = true
@@ -129,7 +129,7 @@ class Apple extends Thing {
     this.state = {life: 60, startleFrog: false}
   }
 
-  action(){
+  action(i, j){
 
     if(mapgrid[i][j].moveDir != null || mapgrid[i][j].moved != null){
       mapgrid[i][j].state.startleFrog = true
@@ -244,7 +244,7 @@ class Box extends Thing {
     this.moveSpeed = 1
   }
 
-  action(){
+  action(i, j){
 
     if(mapgrid[i][j].moveDir != null || mapgrid[i][j].moved != null){
       mapgrid[i][j].state.startleFrog = true
@@ -274,7 +274,7 @@ class Bush extends Thing {
     this.hpush = false
   }
 
-  action(){
+  action(i, j){
     if (spacePressed == true){
       contents = look(NORTH, i, j)
       //console.log(contents)
@@ -383,7 +383,7 @@ class CalmFrog extends Thing {
     }
   }
 
-  action(){
+  action(i, j){
     if(look(NORTH, i, j).state.startleFrog || look(EAST, i, j).state.startleFrog
     || look(SOUTH, i, j).state.startleFrog || look(WEST, i, j).state.startleFrog
     || look(NORTH, i, j).isDave || look(EAST, i, j).isDave
@@ -426,7 +426,7 @@ class StartledFrog extends Thing {
     }
   }
 
-  action(){
+  action(i, j){
 
     //console.log(mapgrid[i][j].forward)
     if (look(mapgrid[i][j].left, i, j).empty == true && !look(mapgrid[i][j].left, i, j).isDave){
@@ -505,7 +505,7 @@ class Chopper extends Thing {
     }
   }
 
-  action(){
+  action(i, j){
     if(gameScore >= minScore){
       mapgrid[i][j].solid = false
     }
@@ -540,7 +540,7 @@ class RedFrog extends Thing {
     this.squash = true
   }
 
-  action(){
+  action(i, j){
     if(look(NORTH, i, j).state.startleFrog || look(EAST, i, j).state.startleFrog
     || look(SOUTH, i, j).state.startleFrog || look(WEST, i, j).state.startleFrog
     || look(NORTH, i, j).isDave || look(EAST, i, j).isDave
@@ -579,7 +579,7 @@ class AngryRedFrog extends Thing {
     }
   }
 
-  action(){
+  action(i, j){
     // Eat apples
     let direction = mapgrid[i][j].forward
     contents = look(direction, i, j)
@@ -653,7 +653,7 @@ class ButtonOn extends Thing {
     this.state = {startleFrog: false, initialise: true}
   }
 
-  action(){
+  action(i, j){
 
     if(mapgrid[i][j].state.initialise){
       if(look(HERE, mapgrid[i][j].target[0], mapgrid[i][j].target[1]).properties.name == 'gate'){
@@ -696,7 +696,7 @@ class ButtonOff extends Thing {
     this.breakBox = true
   }
 
-  action(){
+  action(i, j){
 
     if (look(NORTH, i, j).properties.triggerButton || look(EAST, i, j).properties.triggerButton
     || look(SOUTH, i, j).properties.triggerButton || look(WEST, i, j).properties.triggerButton
@@ -742,7 +742,7 @@ class TurretN extends Thing {
     this.forward = NORTH
   }
 
-  action(){
+  action(i, j){
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(NORTH, i, j).properties.name)){
       createItem(i, j - 1, 22, true)
@@ -767,7 +767,7 @@ class TurretE extends Thing {
     this.forward = EAST
   }
 
-action(){
+action(i, j){
   if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
   .includes(look(EAST, i, j).properties.name)){
     createItem(i + 1, j, 22, true)
@@ -792,7 +792,7 @@ class TurretS extends Thing {
     this.forward = SOUTH
   }
 
-  action(){
+  action(i, j){
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(SOUTH, i, j).properties.name)){
       createItem(i, j + 1, 22, true)
@@ -817,7 +817,7 @@ class TurretW extends Thing {
     this.forward = WEST
   }
 
-  action(){
+  action(i, j){
     if(!['wall', 'smiley', 'gate', 'laser', 'lock', 'turretn', 'turrets', 'turrete', 'turretw']
     .includes(look(WEST, i, j).properties.name)){
       createItem(i - 1, j, 22, true)
@@ -851,7 +851,7 @@ class Laser extends Thing {
   }
 
 
-  action(){
+  action(i, j){
     let direction = mapgrid[i][j].forward
     let back = mapgrid[i][j].backward
     let backItem = look(back, i, j)

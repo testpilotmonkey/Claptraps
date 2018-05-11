@@ -3,7 +3,6 @@ let gameOption = 'setup'
 
 let levelMap = []
 let mapgrid = []
-let i, j // I know, these REALLY shouldn't be globals
 
 
 let playerProperties = {properties: {name: 'player',
@@ -92,6 +91,8 @@ let levelList = {}
 let levelNumber = 0
 let endSelect = true
 
+console.log(window.location.pathname)
+
 function preload() {
   //daveImg = loadImage('images/dave2.png')
 
@@ -139,6 +140,8 @@ function resetFlags(rx, ry){
   mapgrid[rx][ry].right = mapgrid[rx][ry].properties.right
   mapgrid[rx][ry].backward = mapgrid[rx][ry].properties.backward
   mapgrid[rx][ry].left = mapgrid[rx][ry].properties.left
+  mapgrid[rx][ry].hpush = mapgrid[rx][ry].properties.hpush
+  mapgrid[rx][ry].vpush = mapgrid[rx][ry].properties.vpush
   mapgrid[rx][ry].cloned = false
   mapgrid[rx][ry].state = Object.assign({}, mapgrid[rx][ry].properties.state)
   mapgrid[rx][ry].x = rx
@@ -193,9 +196,9 @@ function setupGame(){
   resetScreen()
 
   //Create mapgrid from levelMap
-  for(i=0; i<LEVELWIDTH; i++){
+  for(let i=0; i<LEVELWIDTH; i++){
     mapgrid[i] = []
-    for(j=0; j<LEVELHEIGHT; j++){
+    for(let j=0; j<LEVELHEIGHT; j++){
       mapgrid[i][j] = new Object()
       // shallow copy the object, so mapgrid is not just a reference to levelMap
       mapgrid[i][j] = Object.assign({}, levelMap[i][j])
@@ -347,8 +350,8 @@ function playGame(){
   }
 
   // Scan grid for things to do
-  for(i=0; i<LEVELWIDTH; i++){
-    for(j=0; j<LEVELHEIGHT; j++){
+  for(let i=0; i<LEVELWIDTH; i++){
+    for(let j=0; j<LEVELHEIGHT; j++){
 
       // Uncomment to check that x and y variables are being assigned correctly
       // if (!(mapgrid[i][j].x == i &&  mapgrid[i][j].y == j)) console.log('uh oh')
@@ -356,7 +359,7 @@ function playGame(){
       // Activate item actions!
       //if(mapgrid[i][j].beingMovedInto == null){
       if(mapgrid[i][j].cloned == false){ // ignore items that just clones for movement purposes
-        itemProperties[mapgrid[i][j].item].action()
+        itemProperties[mapgrid[i][j].item].action(i, j)
         if (mapgrid[i][j].moved != null){
           mapgrid[i][j].moved = null
           //console.log('stopped!')
@@ -384,10 +387,10 @@ function playGame(){
 
     }
   }
-  for(i=0; i<LEVELWIDTH; i++){
-    for(j=0; j<LEVELHEIGHT; j++){
+  for(let i=0; i<LEVELWIDTH; i++){
+    for(let j=0; j<LEVELHEIGHT; j++){
       if (mapgrid[i][j].moveDir != null){
-        moveItems()
+        moveItems(i, j)
       }
     }
   }
@@ -466,8 +469,8 @@ function playGame(){
   }
 
   // Draw map grid
-  for(i = -2; i < 18; i++){    // Range is 2 tiles outside the window both ways so that tiles don't
-    for(j = -2; j < 14; j++){  // pop in and objects moving into tiles on the border don't pop in either
+  for(let i = -2; i < 18; i++){    // Range is 2 tiles outside the window both ways so that tiles don't
+    for(let j = -2; j < 14; j++){  // pop in and objects moving into tiles on the border don't pop in either
       let offi = i + mapOffsetX
       let offj = j + mapOffsetY
         if (offi > -1 && offi < LEVELWIDTH && offj > -1 && offj < LEVELHEIGHT){
@@ -547,7 +550,7 @@ function getKeyPress() {
       if(contents.solid == false) {
         playerMoveDir = NORTH
         daveWait = 5
-      } else if (getProperty(contents, 'vpush') && contents.moveDir == null && contents.beingMovedInto == null){
+      } else if (contents.vpush && contents.moveDir == null && contents.beingMovedInto == null){
         //console.log(getProperty(contents, 'hpush'),contents.moveDir,contents.beingMovedInto)
         temp = look(NORTH, playerX, playerY - 1)
         //if (getProperty(temp, 'squash')){
@@ -565,7 +568,7 @@ function getKeyPress() {
       if(contents.solid == false) {
         playerMoveDir = SOUTH
         daveWait = 5
-      } else if (getProperty(contents, 'vpush') && contents.moveDir == null && contents.beingMovedInto == null){
+      } else if (contents.vpush && contents.moveDir == null && contents.beingMovedInto == null){
         //console.log(getProperty(contents, 'hpush'),contents.moveDir,contents.beingMovedInto)
         temp = look(SOUTH, playerX, playerY + 1)
         //if (getProperty(temp, 'squash')){
@@ -587,7 +590,7 @@ function getKeyPress() {
         daveWait = 5
         //playerMoving = EAST
 
-      } else if (getProperty(contents, 'hpush') && contents.moveDir == null && contents.beingMovedInto == null){
+      } else if (contents.hpush && contents.moveDir == null && contents.beingMovedInto == null){
         //console.log(getProperty(contents, 'hpush'),contents.moveDir,contents.beingMovedInto)
         temp = look(EAST, playerX + 1, playerY)
         //if (getProperty(temp, 'squash')){
@@ -608,7 +611,7 @@ function getKeyPress() {
         playerMoveDir = WEST
         daveWait = 5
         //playerMoving = WEST
-      } else if (getProperty(contents, 'hpush') && contents.moveDir == null && contents.beingMovedInto == null){
+      } else if (contents.hpush && contents.moveDir == null && contents.beingMovedInto == null){
         temp = look(WEST, playerX - 1, playerY)
         //if (getProperty(temp, 'squash')){
         if (temp.properties.checkSquash(playerX - 2, playerY, contents)){
@@ -820,7 +823,7 @@ function move(direction, mx, my){
   }
 }
 
-function moveItems(){
+function moveItems(i, j){
   //console.log(itemProperties[itemNumber].moveSpeed)
   mapgrid[i][j].moveCounter += itemProperties[mapgrid[i][j].item].moveSpeed
   if(mapgrid[i][j].moveCounter > 3){
@@ -831,6 +834,7 @@ function moveItems(){
     let tempf = mapgrid[i][j].forward, tempr = mapgrid[i][j].right
     let tempb = mapgrid[i][j].backward, templ = mapgrid[i][j].left
     let tempSolid = mapgrid[i][j].solid
+    let tempHpush = mapgrid[i][j].hpush, tempVpush = mapgrid[i][j].vpush
 
     // if moving onto another moving item, clear that other item
     let bmi = mapgrid[xdiff][ydiff].beingMovedInto
@@ -858,6 +862,8 @@ function moveItems(){
     mapgrid[xdiff][ydiff].backward = tempb
     mapgrid[xdiff][ydiff].left = templ
     mapgrid[xdiff][ydiff].solid = tempSolid
+    mapgrid[xdiff][ydiff].hpush = tempHpush
+    mapgrid[xdiff][ydiff].vpush = tempVpush
 
     // This is here instead of in createItem so that sprites are copied correctly
     itemProperties[hitItem.item].hit(xdiff, ydiff, itemProperties[mapgrid[i][j].item])
