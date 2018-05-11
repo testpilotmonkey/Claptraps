@@ -91,27 +91,25 @@ let levelList = {}
 let levelNumber = 0
 let endSelect = true
 
-console.log(window.location.pathname)
-
 function preload() {
   //daveImg = loadImage('images/dave2.png')
 
   // Game sprites are loaded in items.js
   loadGameSprites()
 
-  daveSprites = [loadImage("/images/dave2.png"),
-                loadImage("/images/dave_run1.png"),
-                loadImage("/images/dave_run2.png"),
-                loadImage("/images/dave_run3.png"),
-                loadImage("/images/dave_run4.png"),
-                loadImage("/images/dave_run5.png"),
-                loadImage("/images/dave_run6.png"),
-                loadImage("/images/dave_run_v1.png"),
-                loadImage("/images/dave_run_v2.png"),
-                loadImage("/images/dave_run_v3.png"),
-                loadImage("/images/dave_run_v4.png")]
+  daveSprites = [loadImage(window.location.pathname + "images/dave2.png"),
+                loadImage(window.location.pathname + "images/dave_run1.png"),
+                loadImage(window.location.pathname + "images/dave_run2.png"),
+                loadImage(window.location.pathname + "images/dave_run3.png"),
+                loadImage(window.location.pathname + "images/dave_run4.png"),
+                loadImage(window.location.pathname + "images/dave_run5.png"),
+                loadImage(window.location.pathname + "images/dave_run6.png"),
+                loadImage(window.location.pathname + "images/dave_run_v1.png"),
+                loadImage(window.location.pathname + "images/dave_run_v2.png"),
+                loadImage(window.location.pathname + "images/dave_run_v3.png"),
+                loadImage(window.location.pathname + "images/dave_run_v4.png")]
 
-  targetSprite = loadImage('/images/target.png')
+  targetSprite = loadImage(window.location.pathname + 'images/target.png')
 
   // Levels are loaded in levellist.js
   loadLevels()
