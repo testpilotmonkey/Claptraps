@@ -13,6 +13,8 @@ let playerProperties = {properties: {name: 'player',
                                     empty: false,
                                     state: {startleFrog: true}}
 
+let actors = []
+
 let playerX = 1
 let playerY = 1
 let playerStartX = 1
@@ -76,6 +78,9 @@ let tempWidth = 16
 let tempHeight = 12
 let tempScore = 5
 
+let STARTSCANX = 0
+let ENDSCANX = LEVELWIDTH
+
 let mapOffsetX = 0
 let mapOffsetY = 0
 let scrollX = false
@@ -91,25 +96,28 @@ let levelList = {}
 let levelNumber = 0
 let endSelect = true
 
+let invincible = false
+let slowmo = false
+
 function preload() {
   //daveImg = loadImage('images/dave2.png')
 
   // Game sprites are loaded in items.js
   loadGameSprites()
 
-  daveSprites = [loadImage(window.location.pathname + "images/dave2.png"),
-                loadImage(window.location.pathname + "images/dave_run1.png"),
-                loadImage(window.location.pathname + "images/dave_run2.png"),
-                loadImage(window.location.pathname + "images/dave_run3.png"),
-                loadImage(window.location.pathname + "images/dave_run4.png"),
-                loadImage(window.location.pathname + "images/dave_run5.png"),
-                loadImage(window.location.pathname + "images/dave_run6.png"),
-                loadImage(window.location.pathname + "images/dave_run_v1.png"),
-                loadImage(window.location.pathname + "images/dave_run_v2.png"),
-                loadImage(window.location.pathname + "images/dave_run_v3.png"),
-                loadImage(window.location.pathname + "images/dave_run_v4.png")]
+  daveSprites = [loadImage("images/dave2.png"),
+                loadImage("images/dave_run1.png"),
+                loadImage("images/dave_run2.png"),
+                loadImage("images/dave_run3.png"),
+                loadImage("images/dave_run4.png"),
+                loadImage("images/dave_run5.png"),
+                loadImage("images/dave_run6.png"),
+                loadImage("images/dave_run_v1.png"),
+                loadImage("images/dave_run_v2.png"),
+                loadImage("images/dave_run_v3.png"),
+                loadImage("images/dave_run_v4.png")]
 
-  targetSprite = loadImage(window.location.pathname + 'images/target.png')
+  targetSprite = loadImage('images/target.png')
 
   // Levels are loaded in levellist.js
   loadLevels()
@@ -140,6 +148,8 @@ function resetFlags(rx, ry){
   mapgrid[rx][ry].left = mapgrid[rx][ry].properties.left
   mapgrid[rx][ry].hpush = mapgrid[rx][ry].properties.hpush
   mapgrid[rx][ry].vpush = mapgrid[rx][ry].properties.vpush
+  mapgrid[rx][ry].curveL = mapgrid[rx][ry].properties.curveL
+  mapgrid[rx][ry].curveR = mapgrid[rx][ry].properties.curveR
   mapgrid[rx][ry].cloned = false
   mapgrid[rx][ry].state = Object.assign({}, mapgrid[rx][ry].properties.state)
   mapgrid[rx][ry].x = rx
@@ -149,6 +159,26 @@ function resetFlags(rx, ry){
   } else {
     mapgrid[rx][ry].empty = false
   }
+}
+
+function resetActor(newActor){
+  newActor.properties = itemProperties[newActor.item] // set references to itemProperties
+  newActor.anim_timer = 0
+  newActor.anim_frame = 0
+  newActor.animation = newActor.properties.animation
+  newActor.sprite = newActor.properties.sprite
+  newActor.moveCounter = 0
+  newActor.moveDir = null
+  newActor.moved = null
+  newActor.solid =newActor.properties.solid
+  newActor.squash = newActor.properties.squash
+  newActor.forward = newActor.properties.forward
+  newActor.right = newActor.properties.right
+  newActor.backward = newActor.properties.backward
+  newActor.left = newActor.properties.left
+  newActor.state = Object.assign({}, newActor.properties.state)
+  newActor.skip = false
+  return newActor
 }
 
 function resetScreen(){
@@ -172,6 +202,7 @@ function resetScreen(){
 function setupGame(){
   //console.log('level: ' + levelNumber)
   levelMap = levelList[levelNumber]
+  actors = []
 
   playerStartX = levelMap.playerX
   playerStartY = levelMap.playerY
@@ -179,6 +210,16 @@ function setupGame(){
   LEVELWIDTH = levelMap.levelWidth
   minScore = levelMap.minScore
   tempScore = minScore
+
+  // if(scanX == 'left'){
+  //   STARTSCANX = 0
+  //   ENDSCANX = LEVELWIDTH
+  //   SCANINC = 1
+  // } else {
+  //   STARTSCANX = LEVELWIDTH
+  //   ENDSCANX = -1
+  //   SCANINC = -1
+  // }
 
   //console.log(playerStartX, playerStartY)
   playerX = playerStartX
@@ -197,13 +238,25 @@ function setupGame(){
   for(let i=0; i<LEVELWIDTH; i++){
     mapgrid[i] = []
     for(let j=0; j<LEVELHEIGHT; j++){
-      mapgrid[i][j] = new Object()
-      // shallow copy the object, so mapgrid is not just a reference to levelMap
-      mapgrid[i][j] = Object.assign({}, levelMap[i][j])
+      if (itemProperties[levelMap[i][j].item].actor == true){
+        let newActor = Object.assign({}, levelMap[i][j])
+        newActor.x = i
+        newActor.y = j
+        actors.push(resetActor(newActor))
+        mapgrid[i][j] = Object.assign({}, {item: 0})
+      } else {
+
+        //mapgrid[i][j] = new Object()
+        // shallow copy the object, so mapgrid is not just a reference to levelMap
+        mapgrid[i][j] = Object.assign({}, levelMap[i][j])
+      }
+
+
       resetFlags(i,j)
 
     }
   }
+  console.log (actors)
 }
 
 // Screen is drawn at the end of every 'draw' function, so we have to make sure the draw function
@@ -217,6 +270,9 @@ function draw() {
 
   if (gameOption == 'editor'){ // Editor
     //titleScreen()
+    frameRate(30)
+    slowmo = false
+    
     editor()
     mPressed = false // Placed here so mouse button isn't permanently pressed
     if (escapePressed == true){
@@ -255,6 +311,8 @@ function draw() {
       gameOption = 'editor'
       playerLives = 3
       escapePressed = false
+      playerStartX = levelMap.playerX
+      playerStartY = levelMap.playerY
     }
     if (enterPressed == true){
       gameOption = 'status'
@@ -338,6 +396,17 @@ function playGame(){
     console.log ('action!')
   }
 
+  if (shiftPressed){
+    if (slowmo){
+      slowmo = false
+      frameRate(30)
+    } else {
+      slowmo = true
+      frameRate(20)
+    }
+    shiftPressed = false
+  }
+
   // Hit items under character
   contents = mapgrid[playerX][playerY]
   if (!contents.solid){ // So Dave can push the chopper around without accidently ending the level
@@ -347,9 +416,31 @@ function playGame(){
     //createItem(tempX, tempY, 0, false)
   }
 
+  // Do actors' actions
+  for(let i = 0; i < actors.length; i++){
+    if (actors[i].skip == false){
+      itemProperties[actors[i].item].action(actors[i])
+    }
+  }
+
+
+
   // Scan grid for things to do
-  for(let i=0; i<LEVELWIDTH; i++){
-    for(let j=0; j<LEVELHEIGHT; j++){
+  for(let ii=0; ii<LEVELWIDTH; ii++){
+    let i
+    if(scanX == 'left'){
+      i = ii
+    } else {
+      i = LEVELWIDTH - 1 - ii
+    }
+
+    for(let jj=0; jj<LEVELHEIGHT; jj++){
+      let j
+      if(scanY == 'down'){
+        j = jj
+      } else {
+        j = LEVELHEIGHT - 1 - jj
+      }
 
       // Uncomment to check that x and y variables are being assigned correctly
       // if (!(mapgrid[i][j].x == i &&  mapgrid[i][j].y == j)) console.log('uh oh')
@@ -486,9 +577,32 @@ function playGame(){
           if (scrollY){
             itemOffsetY -= yOffset
           }
-          image(gameSprites[mapgrid[offi][offj].sprite], i*40 + itemOffsetX, j*40 + itemOffsetY)  // use for animation, broken atm
+          image(gameSprites[mapgrid[offi][offj].sprite], i*40 + itemOffsetX, j*40 + itemOffsetY)
         }
       }
+    }
+  }
+
+  // Draw Actors
+  for(let i = 0; i < actors.length; i++){
+
+    if (actors[i].skip == false){
+      let actorX = (actors[i].x - mapOffsetX) * 40
+      let actorY = (actors[i].y - mapOffsetY) * 40
+
+      if (actors[i].moveDir != null){
+        actorX += actors[i].moveDir[0] * actors[i].moveCounter * 10
+        actorY += actors[i].moveDir[1] * actors[i].moveCounter * 10
+      }
+
+      if (scrollX){
+        actorX -= xOffset
+      }
+      if (scrollY){
+        actorY -= yOffset
+      }
+      //rect(actorX, actorY, 40, 40)
+      image(gameSprites[actors[i].sprite], actorX, actorY)
     }
   }
 
@@ -727,6 +841,8 @@ function movePlayer(){
 
 function killPlayer(){
 
+  if (invincible) return
+
   playerMoveCount = 0
   playerX = playerStartX
   playerY = playerStartY
@@ -926,6 +1042,13 @@ function createItem(cX, cY, cItem, triggerHit){
     itemProperties[hitItem.item].hit(cX, cY, itemProperties[cItem])
   }
 
+}
+
+function createActor(x, y, actorNum){
+  let newActor = Object.assign({}, {item: actorNum})
+  newActor.x = x
+  newActor.y = y
+  actors.push(resetActor(newActor))
 }
 
 function daveIsTo(direction, x, y){

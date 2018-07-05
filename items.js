@@ -3,6 +3,8 @@
 let NORTH = [0, -1], SOUTH = [0,1], WEST = [-1,0], EAST = [1,0]
 let NW = [-1, -1], NE = [1,-1], SW = [-1,1], SE = [1,1]
 let HERE = [0, 0]
+let scanX = 'left'
+let scanY = 'down'
 
 class Thing {
   constructor() {
@@ -27,6 +29,7 @@ class Thing {
     this.solidToRedFrog = true
     this.triggerButton = false
     this.state = {startleFrog: false} // State object that gets copied when item on map moves. eg life of apple goes here
+    this.actor = false
   }
 
   hit(hitX, hitY, hitby){

@@ -9,6 +9,7 @@ Controls for game:
 Arrow keys - move
 Space - action button (cut down bushes)
 Enter - Status screen
+Shift - Slow motion, useful for tricky parts!
 
 Controls for editor:
 Left click - place item

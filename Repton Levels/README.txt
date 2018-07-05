@@ -8,6 +8,8 @@ Choose the Game option.
 Load the "Axolotl.ssd" disc.
 On the menu screen press L to load levels.
 Type "AXOLOTL".
-It may say "not found" here, if so try typing "$.AXOLOTL". 
+It may say "not found" here, if so try typing "$.AXOLOTL".
+
+(If you are trying to run another level set, like the Badger set, please replace 'Axolotl' with the name of that set)
 
 If you have any issues with running the files, please get in touch.
