@@ -3,6 +3,7 @@ These are BBC Micro disk files to be run in an emulator. They are designed for t
 How to run:
 
 Load up a BBC Micro emulator (I find BeebEm 4 works the best)
+Set to Master mode (some people have had trouble running it in any other mode)
 Load Repton Around the World disc and boot it.
 Choose the Game option.
 Load the "Axolotl.ssd" disc.
